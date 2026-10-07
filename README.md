@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/pypi/l/octopi.svg?color=green)](https://github.com/Biohub/octopi/raw/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/octopi.svg?color=green)](https://pypi.org/project/octopi)
 [![Python Version](https://img.shields.io/pypi/pyversions/octopi.svg?color=green)](https://www.python.org/)
+[![Preprint](https://img.shields.io/badge/preprint-Research%20Square-blue)](https://www.researchsquare.com/article/rs-10374846/v1)
 
 **O**bject dete**CT**ion **O**f **P**rote**I**ns. A deep learning framework for Cryo-ET 3D particle picking with autonomous model exploration capabilities.
 
@@ -48,6 +49,20 @@ octopi
 ## 📚 Documentation
 
 For detailed documentation, tutorials, CLI and API reference, visit our [documentation](https://biohub.github.io/octopi/).
+
+## 📄 Citation
+
+If you use octopi in your research, please use the following BibTeX entry.
+
+```bibtex
+@article{schwartz2026octopi,
+  title     = {Automated in situ CryoET Structure Determination with a Self-Configuring Workflow},
+  author    = {Schwartz, Jonathan and Ji, Daniel and Ermel, Utz and Hutchings, Joshua and Woldeyes, Rahel and Zhao, Zhuowen and Henkel, Christof an d Ali, Mallak and Yu, Yue and Agard, David and Paraan, Mohammadreza and Carragher, Bridget and Kimanius, Dari},
+  note      = {Preprint},
+  year      = {2026},
+  doi       = {10.21203/rs.3.rs-10374846/v1}
+}
+```
 
 ## 🤝 Contributing
 
