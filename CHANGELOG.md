@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/Biohub/octopi/compare/octopi-v1.7.0...octopi-v1.8.0) (2026-11-25)
+
+
+### ✨ Features
+
+* agent skill and `octopi agents install` for Claude Code, Codex, and other agents ([#81](https://github.com/Biohub/octopi/issues/81)) ([fe4151b](https://github.com/Biohub/octopi/commit/fe4151b171e7d37d3dd1e7e8958e718c668cc572))
+
 ## [1.7.0](https://github.com/Biohub/octopi/compare/octopi-v1.6.0...octopi-v1.7.0) (2026-09-09)
 
 
