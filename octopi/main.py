@@ -11,6 +11,7 @@ from octopi.entry_points.run_localize import cli as localize
 from octopi.entry_points.run_evaluate import cli as evaluate
 from octopi.extract.cli import cli as extract_cli
 from octopi.mcp.cli import mcp_cli
+from octopi.agents.cli import agents_cli
 
 @click.group(context_settings=cli_context)
 def routines():
@@ -25,6 +26,7 @@ routines.add_command(inference)
 routines.add_command(localize)
 routines.add_command(model_explore)
 routines.add_command(evaluate)
+routines.add_command(agents_cli)
 routines.add_command(mcp_cli)
 routines.add_command(extract_cli)
 

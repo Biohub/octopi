@@ -18,6 +18,10 @@ click.rich_click.COMMAND_GROUPS = {
         {
             "name": "Inference",
             "commands": ["segment", "localize", "evaluate", "extract"]
+        },
+        {
+            "name": "AI Agents",
+            "commands": ["agents"]
         }
     ]
 }
@@ -158,6 +162,40 @@ click.rich_click.OPTION_GROUPS = {
         {
             "name": "Voxel Settings",
             "options": ["--input-voxel-size", "--output-voxel-size"]
+        }
+    ],
+    "routines agents install": [
+        {
+            "name": "Scope",
+            "options": ["--target", "--agent", "--project-path"]
+        },
+        {
+            "name": "MCP Server",
+            "options": ["--mcp", "--desktop", "--python-path"]
+        },
+        {
+            "name": "Options",
+            "options": ["--force", "--help"]
+        }
+    ],
+    "routines agents status": [
+        {
+            "name": "Scope",
+            "options": ["--target", "--agent", "--project-path"]
+        }
+    ],
+    "routines agents uninstall": [
+        {
+            "name": "Scope",
+            "options": ["--target", "--agent", "--project-path"]
+        },
+        {
+            "name": "MCP Server",
+            "options": ["--desktop"]
+        },
+        {
+            "name": "Options",
+            "options": ["--force", "--help"]
         }
     ],
 }

@@ -66,6 +66,8 @@ STEP 2 — train OR model-explore
   NEVER call run_octopi_command for these unless the user says "run it", "go ahead", or "execute it".
   Key params for both: --config, --tomo-uri (tomogram URI, repeatable for multi-source training — see URI FORMATS), --target-uri (target seg URI), --output
   Key params for model-explore: --model-type, --num-trials, --submitit True, --njobs, --gpu-constraint
+  Suggest --model-type segresnet by default (pass it explicitly; the CLI default is unet). Use
+  unet, swinunetr, or dynunet only if the user asks for them.
 
 STEP 3 — segment
   Run sliding-window inference on tomograms to produce probability maps.
