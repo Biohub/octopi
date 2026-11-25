@@ -9,9 +9,9 @@ import rich_click as click
 from octopi import cli_context
 
 
-@click.group(context_settings=cli_context, name="mcp")
+@click.group(context_settings=cli_context, name="mcp", hidden=True)
 def mcp_cli():
-    """Octopi MCP server and Claude configuration."""
+    """Octopi MCP server (legacy commands; use `octopi agents install` instead)."""
     pass
 
 
@@ -53,7 +53,72 @@ def _target_display(target: str) -> str:
     }.get(target, target)
 
 
-@mcp_cli.command("install")
+SERVER_MODULE = "octopi.mcp.server"
+
+
+def read_config(config_path: Path) -> dict:
+    """Read a Claude JSON config; returns {} if it doesn't exist. Raises on unreadable files."""
+    if not config_path.exists():
+        return {}
+    with open(config_path) as f:
+        return json.load(f)
+
+
+def register_server(config_path: Path, server_name: str = "octopi", python_path: Optional[str] = None,
+                    force: bool = False) -> tuple:
+    """Add the octopi MCP server to a Claude config. Returns (status, message), status in
+    {'installed', 'unchanged', 'skipped', 'error'}."""
+    python_path = python_path or sys.executable
+    entry = {"command": python_path, "args": ["-m", SERVER_MODULE], "env": {}}
+    try:
+        config = read_config(config_path)
+    except (json.JSONDecodeError, OSError) as e:
+        if not force:
+            return "error", f"cannot read {config_path} ({e}); use --force to overwrite"
+        config = {}
+
+    servers = config.setdefault("mcpServers", {})
+    if servers.get(server_name) == entry:
+        return "unchanged", f"already registered in {config_path}"
+    if server_name in servers and not force:
+        return "skipped", f"a different '{server_name}' entry exists in {config_path} (use --force to overwrite)"
+
+    servers[server_name] = entry
+    try:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+    except OSError as e:
+        return "error", f"cannot write {config_path} ({e})"
+    return "installed", f"registered in {config_path}"
+
+
+def unregister_server(config_path: Path, server_name: str = "octopi") -> tuple:
+    """Remove a server entry from a Claude config. Returns (status, message)."""
+    try:
+        config = read_config(config_path)
+    except (json.JSONDecodeError, OSError) as e:
+        return "error", f"cannot read {config_path} ({e})"
+    servers = config.get("mcpServers", {})
+    if server_name not in servers:
+        return "absent", f"not registered in {config_path}"
+    del servers[server_name]
+    try:
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+    except OSError as e:
+        return "error", f"cannot write {config_path} ({e})"
+    return "removed", f"removed from {config_path}"
+
+
+def server_registered(config_path: Path, server_name: str = "octopi") -> bool:
+    try:
+        return server_name in read_config(config_path).get("mcpServers", {})
+    except (json.JSONDecodeError, OSError):
+        return False
+
+
+@mcp_cli.command("install", hidden=True)
 @click.option(
     "--target", "-t",
     type=click.Choice(["desktop", "code-global", "code-project"]),
@@ -70,7 +135,8 @@ def _target_display(target: str) -> str:
 @click.option("--python-path", "-py", default=None, help="Path to Python executable (defaults to current Python)")
 @click.option("--force", "-f", is_flag=True, help="Overwrite existing entry if present")
 def mcp_install(target: str, project_path: Optional[Path], server_name: str, python_path: Optional[str], force: bool) -> None:
-    """Register octopi as an MCP server in Claude Desktop or Claude Code."""
+    """Register octopi as an MCP server (deprecated: use `octopi agents install`)."""
+    click.echo("Note: `octopi mcp install` is deprecated; `octopi agents install` sets up the skill and MCP together.")
     config_path = _get_config_path(target, project_path)
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -123,7 +189,7 @@ def mcp_install(target: str, project_path: Optional[Path], server_name: str, pyt
         click.echo(f"   Open Claude Code in {proj} to apply.")
 
 
-@mcp_cli.command("status")
+@mcp_cli.command("status", hidden=True)
 @click.option(
     "--target",
     type=click.Choice(["desktop", "code-global", "code-project"]),
@@ -165,7 +231,7 @@ def mcp_status(target: str, project_path: Optional[Path]) -> None:
         click.echo(f"  Run: octopi mcp install --target {target}")
 
 
-@mcp_cli.command("uninstall")
+@mcp_cli.command("uninstall", hidden=True)
 @click.option(
     "--target",
     type=click.Choice(["desktop", "code-global", "code-project"]),

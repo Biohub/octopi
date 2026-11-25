@@ -1,6 +1,6 @@
-# Claude Code / Claude Desktop Integration
+# AI Agent Integration
 
-`octopi mcp` starts a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that connects Claude Code or Claude Desktop directly to your cryo-ET particle picking workflows. Claude can look up command options, suggest fully-formed CLI invocations, and run fast processing steps — all from a conversation.
+octopi can be connected to AI coding agents such as Claude Code, Codex, and other open-source agents, so they can drive your cryo-ET particle picking workflows from a conversation. The agent looks up command options, suggests fully formed CLI invocations, and runs fast processing steps for you. The examples below use Claude, but every agent gets the same instructions.
 
 ---
 
@@ -43,78 +43,63 @@ Once connected, you can describe what you want in plain language and Claude hand
 </div>
 
 !!! info "You stay in control"
-    Claude suggests commands rather than running them by default — you copy, review, and paste. For fast, non-destructive commands you can say *"go ahead and run it"* to skip the copy-paste step. GPU-intensive jobs (`train`, `model-explore`, `segment`) are always handed off regardless.
-
-??? note "MCP tools used under the hood"
-    | Tool | Purpose |
-    |------|---------|
-    | `list_octopi_commands` | Browse all exposed commands and their descriptions |
-    | `get_command_help` | Fetch the full `--help` output for any command |
-    | `run_octopi_command` | Execute an octopi command directly |
+    Claude suggests long-running commands instead of running them. You copy, review, and paste. GPU-intensive jobs (`train`, `model-explore`, `segment`) are only run if you explicitly say *"go ahead and run it"*. Fast, CPU-only steps (`create-targets`, `localize`, `evaluate`, `extract`) may be run directly once all their parameters are known.
 
 ---
 
 ## Setup
 
-The MCP server ships with octopi — no extra install needed. Run `octopi mcp install` once to register it for your preferred destination. It writes to the right config file automatically and you never need to start the server manually.
-
-=== "Claude Code (project)"
-
-    Registers octopi for the current directory only. Other projects won't see it.
-
-    ```bash
-    cd /path/to/your/project
-    octopi mcp install
-    ```
-
-    This creates a `.mcp.json` file in the current directory. Open Claude Code in that directory and the server connects automatically.
-
-=== "Claude Code (global)"
-
-    Registers octopi for all Claude Code sessions on this machine.
-
-    ```bash
-    octopi mcp install --target code-global
-    ```
-
-    Start a new Claude Code session to pick up the change.
-
-=== "Claude Desktop"
-
-    ```bash
-    octopi mcp install --target desktop
-    ```
-
-    Restart Claude Desktop to pick up the change.
-
-!!! tip "Also register copick-mcp"
-    [copick-mcp](https://github.com/copick/copick-mcp) is bundled with octopi and gives Claude direct access to your CoPick project — runs, picks, segmentations, and tomograms. Register it the same way:
-
-    ```bash
-    copick setup mcp --target code-global   # all Claude Code sessions
-    copick setup mcp --target code-project  # current directory only
-    ```
-
-You can verify the registration at any time:
+Everything ships with octopi. One command sets up your agents:
 
 ```bash
-octopi mcp status                        # check project-level
-octopi mcp status --target code-global   # check global
+octopi agents install                    # for your user account (all projects)
+octopi agents install --target project   # only the current project
 ```
 
-To remove it:
+This installs two things:
+
+- **The octopi skill.** A pair of Markdown files that teach the agent the octopi workflow: the step order, URI shorthand, which commands it may run, and an example for each step. It follows the open [Agent Skills](https://agentskills.io) format, so the same files work in Claude Code, Codex, and any other agent that supports skills.
+- **The octopi MCP server.** A small tool that lets an agent run octopi commands: it lists them, fetches their `--help`, and executes them. It's registered with Claude Code and, if the `codex` CLI is installed, with Codex.
+
+Start a new agent session to pick up the changes. The skill activates automatically when you mention octopi, particle picking, CoPick projects, or URIs like `wbp@10.0`. In Claude Code you can also invoke it explicitly with `/octopi`.
+
+!!! note "Make sure octopi is on your `PATH`"
+    The agent runs the `octopi` command in its shell. Launch it from a terminal where your octopi environment is active, so `octopi --help` works there.
+
+??? info "Options and where files go"
+    | Option | Effect |
+    |--------|--------|
+    | `--target global` (default) / `--target project` | Install under `~/` or under the current project (`--project-path` to choose another) |
+    | `--agent all` (default) / `claude` / `agents` | Set up Claude Code only (`claude`), Codex and other Agent Skills clients only (`agents`), or both |
+    | `--no-mcp` | Install only the skill and skip the MCP server |
+    | `--desktop` | Also register the MCP server in Claude Desktop |
+    | `--force` | Overwrite existing entries, e.g. after upgrading octopi |
+
+    | What | Claude Code | Codex / other agents |
+    |------|-------------|----------------------|
+    | Skill | `.claude/skills/octopi` | `.agents/skills/octopi` |
+    | MCP server | `~/.claude.json` (global) or `./.mcp.json` (project) | `~/.codex/config.toml` via `codex mcp add` (user-level only) |
+
+    For an agent that reads skills from another location, copy the skill folder there. It's just `SKILL.md` and `reference.md`. For any other MCP client, point it at `python -m octopi.mcp.server` (stdio).
+
+Check the installation, update it, or remove it:
 
 ```bash
-octopi mcp uninstall --server-name octopi
+octopi agents status              # what's installed, and is it up to date?
+octopi agents install --force     # refresh after `pip install -U octopi`
+octopi agents uninstall           # remove the skill and MCP registrations
 ```
+
+!!! tip "Pair it with copick"
+    [copick-mcp](https://github.com/copick/copick-mcp) gives Claude direct access to your CoPick project's runs, picks, segmentations, and tomograms. Register it with `copick setup mcp --target code-global` (or `--target code-project`). Even without it, Claude can inspect a project with the copick CLI or Python API.
 
 ---
 
 ## Example Workflow
 
-A full particle picking run — from coordinates to evaluated picks — guided by Claude:
+The conversation is the same whichever agent you use. A full particle picking run, from coordinates to evaluated picks:
 
-**Step 1 — Create segmentation targets**
+**Step 1: Create segmentation targets**
 
 > *"Help me create segmentation targets from my CoPick project at /data/config.json. I want targets for ribosome:manual/1, virus-like-particle:tm/2, and membranes:membrane-seg/1."*
 
@@ -123,14 +108,15 @@ Claude suggests (or runs):
 ```bash
 octopi create-targets \
     --config /data/config.json \
-    --target ribosome,manual,1 \
-    --target virus-like-particle,tm,2 \
-    --target membranes,membrane-seg,1 \
-    --tomo-uri wbp@10.0
+    --target ribosome:manual/1 \
+    --target virus-like-particle:tm/2 \
+    --target membranes:membrane-seg/1 \
+    --tomo-uri wbp@10.0 \
+    --target-uri targets:octopi/1
 ```
 
 ??? tip "URI shorthand for tomograms, segmentations, and picks"
-    Throughout the workflow you can refer to data resources using compact URI strings rather than spelling out individual flags. Claude understands both formats.
+    Throughout the workflow you can refer to data resources with compact URI strings instead of spelling out individual flags.
 
     | Resource | URI format | Example |
     |----------|-----------|---------|
@@ -138,13 +124,11 @@ octopi create-targets \
     | Segmentation | `name:user_id/session_id` | `predict:octopi/1` |
     | Picks / targets | `name:user_id/session_id` | `ribosome:manual/1` |
 
-    Multiple picks or segmentation targets can be listed together:
+    Each `--target` can be a particle pick set or a continuous segmentation. octopi detects which from the CoPick config. Labels are assigned in the order the targets are given.
 
-    > *"… targets for ribosome:manual/1, virus-like-particle:tm/2, and membranes:membrane-seg/1"*
+**Step 2: Explore model architectures**
 
-**Step 2 — Explore model architectures**
-
-> *"Run a Bayesian architecture search on those targets (targets:octopi/1). I'm on a SLURM cluster — distribute 50 trials across 5 jobs, constrained to a6000 GPUs."*
+> *"Run a Bayesian architecture search on those targets (targets:octopi/1). I'm on a SLURM cluster, so distribute 50 trials across 5 jobs, constrained to a6000 GPUs."*
 
 Claude suggests:
 
@@ -153,15 +137,18 @@ octopi model-explore \
     --config /data/config.json \
     --tomo-uri wbp@10.0 \
     --target-uri targets:octopi/1 \
-    --model-type Unet \
+    --model-type segresnet \
     --num-trials 50 \
     --output explore_results \
-    --submitit \
+    --submitit True \
     --njobs 5 \
     --gpu-constraint a6000
 ```
 
-**Step 3 — Segment tomograms**
+!!! warning "`--submitit` takes a value"
+    `--submitit` is a boolean option, not a bare flag. Write `--submitit True`. Leave it out to train on local GPUs.
+
+**Step 3: Segment tomograms**
 
 > *"Segment all tomograms (wbp@10.0) with the best model from the search. Save predictions as predict:octopi/1."*
 
@@ -170,13 +157,13 @@ Claude suggests:
 ```bash
 octopi segment \
     --config /data/config.json \
-    --model-config explore_results/best_model_config.yaml \
-    --model-weights explore_results/best_model.pt \
+    --model-config explore_results/model_config.yaml \
+    --model-weights explore_results/best_model.pth \
     --tomo-uri wbp@10.0 \
     --seg-uri predict:octopi/1
 ```
 
-**Step 4 — Localize particles**
+**Step 4: Localize particles**
 
 > *"Extract particle coordinates from predict:octopi/1 using watershed. Save picks with session 2."*
 
@@ -191,9 +178,9 @@ octopi localize \
     --pick-session-id 2
 ```
 
-**Step 5 — Evaluate (optional)**
+**Step 5: Evaluate (optional)**
 
-> *"Evaluate my picks (octopi, session 1) against the ground truth annotations from user 'expert'."*
+> *"Evaluate my picks (octopi, session 2) against the ground truth annotations from user 'expert'."*
 
 Claude runs:
 
@@ -202,5 +189,5 @@ octopi evaluate \
     --config /data/config.json \
     --ground-truth-user-id expert \
     --predict-user-id octopi \
-    --predict-session-id 1
+    --predict-session-id 2
 ```
